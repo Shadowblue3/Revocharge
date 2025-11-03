@@ -8,6 +8,7 @@ import RevoChargePlans from './components/RevoChargePlans';
 import DataSharingPage from './components/DataSharingPage';
 import PurchasePage from './components/PurchasePage';
 import ProtectedRoute from './components/ProtectedRoute';
+import Dashboard from './components/Dashboard';
 
 function App() {
   return (
@@ -34,6 +35,14 @@ function App() {
           <Route path="/:email/home" element={
             <ProtectedRoute>
               <RevoChargeHome />
+            </ProtectedRoute>
+            } />
+        
+        {/* Dashboard */}
+        
+          <Route path="/:email/dashboard" element={
+            <ProtectedRoute>
+              <Dashboard />
             </ProtectedRoute>
             } />
         

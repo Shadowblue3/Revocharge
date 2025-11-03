@@ -63,6 +63,9 @@ const Navbar = () => {
                                     <Link to={`/${currUser}/home`} className="text-gray-700 hover:text-orange-600 transition-colors font-medium">
                                         Home
                                     </Link>
+                                    <Link to={`/${currUser}/dashboard`} className="text-gray-700 hover:text-orange-600 transition-colors font-medium">
+                                        Dashboard
+                                    </Link>
                                     <Link to={`/${currUser}/plans`} className="text-gray-700 hover:text-orange-600 transition-colors font-medium">
                                         Plans
                                     </Link>
