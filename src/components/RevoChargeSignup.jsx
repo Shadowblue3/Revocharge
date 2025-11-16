@@ -110,6 +110,7 @@ export default function RevoChargeSignup() {
 
   const handleSubmit = async () => {
     const backendUrl = import.meta.env.VITE_BACKEND_URL;
+    console.log(backendUrl)
     const allTouched = {
       email: true,
       phone: true,

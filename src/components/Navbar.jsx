@@ -10,6 +10,7 @@ const Navbar = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [currUser, setCurrUser] = useState("");
+    const [credits, setCredits] = useState(0);
 
     // Detect scroll to change navbar style
     useEffect(() => {
@@ -24,6 +25,13 @@ const Navbar = () => {
         setIsLoggedIn(!!userEmail);
         if (userEmail) {
             setCurrUser(userEmail)
+            // fetch user to get credits
+            fetch(`http://localhost:3000/api/user/${userEmail}`)
+              .then(r => r.ok ? r.json() : null)
+              .then(data => {
+                if (data && typeof data.credits === 'number') setCredits(data.credits);
+              })
+              .catch(() => {});
         }
     }, []);
 
@@ -79,7 +87,7 @@ const Navbar = () => {
                                             <Coins className="text-orange-600" fill="currentColor" />
                                             <h2 className=' text-orange-600 font-extrabold'>Credits</h2>
                                         </div>
-                                        123
+                                        {credits}
                                     </div>
 
                                     <button

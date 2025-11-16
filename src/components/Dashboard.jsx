@@ -10,42 +10,60 @@ export default function Dashboard() {
     plans: 0,
     validity: 0
   });
+  const [user, setUser] = useState(null);
 
-  // Mock user data
-  const userData = {
-    name: "Rajesh Kumar",
-    email: "rajesh.kumar@example.com",
-    currentPlan: "Premium Unlimited",
-    dataRemaining: 45.5, // GB
-    dataTotal: 75, // GB
-    smsUsed: 250,
-    smsTotal: 500,
-    plansPurchased: 12,
-    validityDays: 28,
-    lastRecharge: "15 Oct 2024",
-    nextBilling: "12 Nov 2024"
-  };
+  // Derived user data (fallbacks for missing fields)
+  const userData = (() => {
+    const latestPlan = user?.totalPlans?.[user.totalPlans.length - 1];
+    return {
+      name: user?.email?.split('@')[0] || 'User',
+      email: user?.email || '',
+      currentPlan: latestPlan?.name || 'No Active Plan',
+      // Keep data as-is (do not convert to MB); show it as provided (e.g., "3 GB" or "2572 MB")
+      dataRemainingText: latestPlan?.data || '—',
+      smsUsed: 0,
+      smsTotal: latestPlan?.sms ? parseInt(latestPlan.sms) || 0 : 0,
+      plansPurchased: user?.totalPlans?.length || 0,
+      validityDays: latestPlan?.validity ? parseInt(latestPlan.validity) || 0 : 0,
+      lastRecharge: latestPlan?.purchasedAt ? new Date(latestPlan.purchasedAt).toDateString() : '—',
+      nextBilling: '—'
+    };
+  })();
 
-  // Animate numbers on mount
+  // Fetch user and animate numbers when user changes
   useEffect(() => {
-    const duration = 2000;
+    const email = localStorage.getItem('userEmail');
+    if (!email) return;
+    fetch(`http://localhost:3000/api/user/${email}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data) setUser(data);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const duration = 1000;
     const steps = 60;
     const interval = duration / steps;
 
-    const timer = setInterval(() => {
-      setAnimatedStats(prev => ({
-        data: prev.data < userData.dataRemaining ? Math.min(prev.data + (userData.dataRemaining / steps), userData.dataRemaining) : userData.dataRemaining,
-        sms: prev.sms < userData.smsUsed ? Math.min(prev.sms + (userData.smsUsed / steps), userData.smsUsed) : userData.smsUsed,
-        plans: prev.plans < userData.plansPurchased ? Math.min(prev.plans + (userData.plansPurchased / steps), userData.plansPurchased) : userData.plansPurchased,
-        validity: prev.validity < userData.validityDays ? Math.min(prev.validity + (userData.validityDays / steps), userData.validityDays) : userData.validityDays
-      }));
-    }, interval);
+    let t;
+    if (user) {
+      t = setInterval(() => {
+        setAnimatedStats(prev => ({
+          data: prev.data < userData.dataRemaining ? Math.min(prev.data + (userData.dataRemaining / steps), userData.dataRemaining) : userData.dataRemaining,
+          sms: prev.sms < userData.smsUsed ? Math.min(prev.sms + (userData.smsUsed / steps), userData.smsUsed) : userData.smsUsed,
+          plans: prev.plans < userData.plansPurchased ? Math.min(prev.plans + (userData.plansPurchased / steps), userData.plansPurchased) : userData.plansPurchased,
+          validity: prev.validity < userData.validityDays ? Math.min(prev.validity + (userData.validityDays / steps), userData.validityDays) : userData.validityDays
+        }));
+      }, interval);
+    }
 
-    return () => clearInterval(timer);
-  }, []);
+    return () => clearInterval(t);
+  }, [user]);
 
-  const dataPercentage = (userData.dataRemaining / userData.dataTotal) * 100;
-  const smsPercentage = (userData.smsUsed / userData.smsTotal) * 100;
+  const dataPercentage = 0;
+  const smsPercentage = userData.smsTotal ? (userData.smsUsed / userData.smsTotal) * 100 : 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-50">
@@ -74,9 +92,9 @@ export default function Dashboard() {
                 </div>
                 <h3 className="text-gray-600 text-sm font-semibold mb-2">Data Remaining</h3>
                 <p className="text-3xl font-bold text-gray-900 mb-1">
-                  {animatedStats.data.toFixed(1)} <span className="text-lg text-gray-500">GB</span>
+                  {userData.dataRemainingText}
                 </p>
-                <p className="text-xs text-gray-500">of {userData.dataTotal} GB</p>
+                <p className="text-xs text-gray-500">Your current plan data</p>
                 <div className="mt-4 bg-gray-200 rounded-full h-2 overflow-hidden">
                   <div 
                     className="bg-gradient-to-r from-orange-500 to-orange-600 h-full rounded-full transition-all duration-1000"
@@ -163,7 +181,7 @@ export default function Dashboard() {
                 <div className="grid grid-cols-2 gap-4 mb-6">
                   <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
                     <p className="text-orange-100 text-sm mb-1">Data Allowance</p>
-                    <p className="text-2xl font-bold">{userData.dataTotal} GB</p>
+                    <p className="text-2xl font-bold">{userData.dataRemainingText}</p>
                   </div>
                   <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
                     <p className="text-orange-100 text-sm mb-1">SMS Limit</p>

@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Zap, Wifi, Phone, Package, TrendingDown, Check, Info, Smartphone, Radio, Database, DollarSign } from 'lucide-react';
 import Navbar from './Navbar';
+import { useNavigate } from 'react-router-dom';
 
 export default function RevoChargePlans() {
+  const navigate = useNavigate()
+
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [floatingIcons, setFloatingIcons] = useState([]);
 
@@ -168,6 +171,13 @@ export default function RevoChargePlans() {
     ? plans 
     : plans.filter(plan => plan.category === selectedFilter);
 
+  const handleRechargeNow = (plan)=>{
+     console.log("Selected plan:", plan);
+    navigate(`/${localStorage.getItem("userEmail")}/plans/purchase`, {
+      state: { plan }
+    })
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-50 relative overflow-hidden">
         
@@ -330,7 +340,7 @@ export default function RevoChargePlans() {
                   </div>
 
                   {/* Action Button */}
-                  <button className="w-full py-3 bg-gradient-to-r from-orange-600 to-orange-700 text-white rounded-xl font-semibold hover:from-orange-700 hover:to-orange-800 transition-all transform hover:scale-105 shadow-md hover:shadow-lg flex items-center justify-center space-x-2 group-hover:shadow-orange-200">
+                  <button onClick={() => handleRechargeNow(plan)} className="w-full py-3 bg-gradient-to-r from-orange-600 to-orange-700 text-white rounded-xl font-semibold hover:from-orange-700 hover:to-orange-800 transition-all transform hover:scale-105 shadow-md hover:shadow-lg flex items-center justify-center space-x-2 group-hover:shadow-orange-200">
                     <Zap className="w-5 h-5" />
                     <span>Recharge Now</span>
                   </button>

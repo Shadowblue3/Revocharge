@@ -41,6 +41,7 @@ export default function LoginPage() {
       },
       body: JSON.stringify(loginData),
     })
+    const data = response.json()
     if (response.ok) {
       localStorage.setItem("userEmail", loginData.email)
       alert('Signup successful! Welcome to RevoCharge 🎉');

@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 import RevoCharge from './components/RevoCharge';
 import LoginPage from './components/LoginPage';
@@ -14,10 +14,17 @@ function App() {
   return (
     <>
       <Router>
-
-        {/* Landing page */}
         <Routes>
-          <Route path="/" element={<RevoCharge />} />
+        {/* Landing page */}
+
+        <Route
+          path="/"
+          element={
+            localStorage.getItem("userEmail")
+              ? <Navigate to={`/${localStorage.getItem("userEmail")}/home`} />
+              : <RevoCharge />
+          }
+        />
         
 
         {/* Login page */}

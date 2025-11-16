@@ -5,7 +5,8 @@ import Navbar from './Navbar';
 
 
 export default function DataSharingPage() {
-  const [availableData, setAvailableData] = useState(2500); // MB
+  const [availableData, setAvailableData] = useState(0); // MB fetched from backend
+  const [initialMB, setInitialMB] = useState(0); // Baseline MB for progress bar
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [selectedAmount, setSelectedAmount] = useState('');
   const [showLoader, setShowLoader] = useState(false);
@@ -27,17 +28,48 @@ export default function DataSharingPage() {
       size: 20 + Math.random() * 40
     }));
     setFloatingParticles(particles);
+
+    // fetch initial available data from latest plan
+    const email = localStorage.getItem('userEmail');
+    if (!email) return;
+    fetch(`http://localhost:3000/api/user/${email}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(user => {
+        if (!user) return;
+        const latest = user.totalPlans?.[user.totalPlans.length - 1];
+        if (!latest) return;
+        // Parse numeric value and unit from latest.data, eg: "3 GB" or "2500 MB"
+        if (typeof latest.data === 'number') {
+          // Assume numeric already represents MB
+          setAvailableData(latest.data);
+          setInitialMB(latest.data);
+          return;
+        }
+        if (typeof latest.data === 'string') {
+          const s = latest.data.trim();
+          // Robust detection: find first number and unit anywhere in the string
+          const numMatch = s.match(/\d+(?:\.\d+)?/);
+          const unitMatch = s.match(/gb|mb/i);
+          if (numMatch) {
+            const value = parseFloat(numMatch[0]);
+            const unit = unitMatch ? unitMatch[0].toUpperCase() : 'MB';
+            const mb = unit === 'GB' ? Math.round(value * 1024) : Math.round(value);
+            setAvailableData(mb);
+            setInitialMB(mb);
+            return;
+          }
+          setAvailableData(0);
+          setInitialMB(0);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const shareAmounts = [100, 200, 300, 400, 500, 600, 700, 800];
 
-  const handleShare = () => {
+  const handleShare = async () => {
     const amount = parseInt(selectedAmount);
-    
-    if (!amount) {
-      return;
-    }
-
+    if (!amount) return;
     if (amount > availableData) {
       setShowError(true);
       setTimeout(() => setShowError(false), 3000);
@@ -47,8 +79,17 @@ export default function DataSharingPage() {
     setShowShareDialog(false);
     setShowLoader(true);
 
-    setTimeout(() => {
-      setAvailableData(prev => prev - amount);
+    try {
+      const email = localStorage.getItem('userEmail');
+      const res = await fetch('http://localhost:3000/api/share-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, amountMB: amount })
+      });
+      if (!res.ok) throw new Error('share failed');
+      const data = await res.json();
+
+      setAvailableData(data.remainingMB);
       setSharedHistory(prev => [
         { amount, date: 'Just now', recipient: 'User #' + Math.floor(Math.random() * 10000) },
         ...prev
@@ -56,9 +97,12 @@ export default function DataSharingPage() {
       setShowLoader(false);
       setShowSuccess(true);
       setSelectedAmount('');
-      
       setTimeout(() => setShowSuccess(false), 3000);
-    }, 3000);
+    } catch (e) {
+      setShowLoader(false);
+      setShowError(true);
+      setTimeout(() => setShowError(false), 3000);
+    }
   };
 
   return (
@@ -155,14 +199,14 @@ export default function DataSharingPage() {
                   <div className="h-6 bg-gray-200 rounded-full overflow-hidden relative">
                     <div 
                       className="h-full bg-gradient-to-r from-orange-500 via-orange-600 to-orange-700 rounded-full transition-all duration-1000 ease-out relative animate-shimmer"
-                      style={{ width: `${(availableData / 3000) * 100}%` }}
+                      style={{ width: `${initialMB ? Math.max(0, Math.min(100, (availableData / initialMB) * 100)) : 0}%` }}
                     >
                       <div className="absolute inset-0 bg-white opacity-30 animate-shimmer-slide"></div>
                     </div>
                   </div>
                   <div className="flex justify-between mt-2 text-sm text-gray-600">
                     <span>0 MB</span>
-                    <span>3000 MB</span>
+                    <span>{initialMB} MB</span>
                   </div>
                 </div>
 

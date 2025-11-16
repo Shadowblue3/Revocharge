@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
 import { Check, CreditCard, ArrowLeft, Shield, Zap, Clock, Phone, Database, Radio, Package, ChevronRight, X } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Navbar from './Navbar';
-import { useNavigate } from 'react-router-dom';
+
 
 // Mock Navbar component
 
 
 export default function PurchasePage() {
-  const navigate = useNavigate()
+  const location = useLocation();
+  const navigate = useNavigate();
+  const plan = location.state?.plan;
+
 
   const [showPayment, setShowPayment] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState('card');
@@ -21,16 +25,6 @@ export default function PurchasePage() {
   });
   const [cardErrors, setCardErrors] = useState({});
 
-  // Sample plan data
-  const plan = {
-    name: "Ultra 5G",
-    price: 599,
-    validity: "84 days",
-    data: "2GB/day",
-    calls: "Unlimited",
-    sms: "100/day",
-    extras: ["5G Unlimited", "Disney+ Hotstar", "Prime Video Mobile", "High Speed Data"]
-  };
 
   const handleProceedToPayment = () => {
     setShowPayment(true);
@@ -38,12 +32,12 @@ export default function PurchasePage() {
 
   const validateCardDetails = () => {
     const errors = {};
-    
+
     // Validate card number (16 digits)
     if (cardData.number.replace(/\s/g, '').length !== 16) {
       errors.number = 'Card number must be 16 digits';
     }
-    
+
     // Validate expiry date (MM/YY format and valid date)
     const expiryRegex = /^(0[1-9]|1[0-2])\/([0-9]{2})$/;
     if (!expiryRegex.test(cardData.expiry)) {
@@ -53,17 +47,17 @@ export default function PurchasePage() {
       const currentDate = new Date();
       const currentYear = currentDate.getFullYear() % 100;
       const currentMonth = currentDate.getMonth() + 1;
-      
+
       if (parseInt(year) < currentYear || (parseInt(year) === currentYear && parseInt(month) < currentMonth)) {
         errors.expiry = 'Card has expired';
       }
     }
-    
+
     // Validate CVV (3 digits)
     if (!/^\d{3}$/.test(cardData.cvv)) {
       errors.cvv = 'CVV must be 3 digits';
     }
-    
+
     setCardErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -77,13 +71,23 @@ export default function PurchasePage() {
     }
   };
 
-  const processPayment = () => {
+  const processPayment = async () => {
     setProcessing(true);
     setShowCardDialog(false);
-    setTimeout(() => {
+    try {
+      const email = localStorage.getItem('userEmail');
+      await fetch('http://localhost:3000/api/purchase', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, plan })
+      });
       setProcessing(false);
       setSuccess(true);
-    }, 2500);
+    } catch (e) {
+      console.error('Payment/purchase failed', e);
+      setProcessing(false);
+      alert('Purchase failed. Please try again.');
+    }
   };
 
   const handleCardPayment = () => {
@@ -130,11 +134,11 @@ export default function PurchasePage() {
             <div className="text-sm text-gray-600 mb-2">Plan Activated</div>
             <div className="text-2xl font-bold text-orange-600">{plan.name}</div>
           </div>
-          <button 
-            onClick={() => navigate(`/${localStorage.getItem("userEmail")}/plans`)}
+          <button
+            onClick={() => navigate(`/${localStorage.getItem('userEmail')}/dashboard`)}
             className="w-full py-4 bg-gradient-to-r from-orange-600 to-orange-700 text-white rounded-xl font-semibold hover:shadow-lg transition-all"
           >
-            Back to Plans
+            Go to Dashboard
           </button>
         </div>
       </div>
@@ -264,8 +268,8 @@ export default function PurchasePage() {
       {/* Header */}
       <div className="relative z-10 pt-24 pb-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
-          <button 
-            onClick={() => Navigate(`/${localStorage.getItem("userEmail")}/plans`)}
+          <button
+            onClick={() => window.history.back()}
             className="flex items-center text-gray-600 hover:text-orange-600 mb-6 transition-colors"
           >
             <ArrowLeft className="w-5 h-5 mr-2" />
@@ -285,10 +289,10 @@ export default function PurchasePage() {
       <div className="relative z-10 px-4 sm:px-6 lg:px-8 pb-16">
         <div className="max-w-4xl mx-auto">
           <div className="grid lg:grid-cols-3 gap-8">
-            
+
             {/* Plan Details - Left Side */}
             <div className="lg:col-span-2 space-y-6">
-              
+
               {/* Plan Summary Card */}
               <div className="bg-white rounded-2xl shadow-lg p-8 border border-orange-100">
                 <div className="flex items-start justify-between mb-6">
@@ -361,7 +365,7 @@ export default function PurchasePage() {
             <div className="lg:col-span-1">
               <div className="bg-white rounded-2xl shadow-lg p-6 border border-orange-100 sticky top-24">
                 <h3 className="text-xl font-bold text-gray-900 mb-6">Order Summary</h3>
-                
+
                 <div className="space-y-4 mb-6">
                   <div className="flex justify-between text-gray-700">
                     <span>Plan Price</span>
@@ -409,32 +413,32 @@ export default function PurchasePage() {
                       </div>
                       <div className="space-y-2">
                         <label className="flex items-center p-3 border-2 border-orange-300 rounded-lg cursor-pointer bg-white">
-                          <input 
-                            type="radio" 
-                            name="payment" 
+                          <input
+                            type="radio"
+                            name="payment"
                             checked={selectedPayment === 'card'}
                             onChange={() => setSelectedPayment('card')}
-                            className="mr-3" 
+                            className="mr-3"
                           />
                           <span className="text-gray-900">Credit/Debit Card</span>
                         </label>
                         <label className="flex items-center p-3 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-orange-300 transition-colors">
-                          <input 
-                            type="radio" 
-                            name="payment" 
+                          <input
+                            type="radio"
+                            name="payment"
                             checked={selectedPayment === 'upi'}
                             onChange={() => setSelectedPayment('upi')}
-                            className="mr-3" 
+                            className="mr-3"
                           />
                           <span className="text-gray-900">UPI</span>
                         </label>
                         <label className="flex items-center p-3 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-orange-300 transition-colors">
-                          <input 
-                            type="radio" 
-                            name="payment" 
+                          <input
+                            type="radio"
+                            name="payment"
                             checked={selectedPayment === 'netbanking'}
                             onChange={() => setSelectedPayment('netbanking')}
-                            className="mr-3" 
+                            className="mr-3"
                           />
                           <span className="text-gray-900">Net Banking</span>
                         </label>
